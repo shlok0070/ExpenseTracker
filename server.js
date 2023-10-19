@@ -46,13 +46,13 @@ app.post('/login', async (req, res) => {
         const user = await User.findOne({ where: { email } });
         
         if (!user) {
-            return res.status(400).json({ message: 'Email does not exist' });
+            return res.status(404).json({ message: 'Email does not exist' });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         
         if (!isPasswordValid) {
-            return res.status(400).json({ message: 'Wrong password' });
+            return res.status(401).json({ message: 'Wrong password' });
         }
         
         res.status(200).json({ message: 'User logged in successfully' });

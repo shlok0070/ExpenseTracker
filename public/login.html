@@ -51,6 +51,8 @@
         
         if (response.status === 200) {
             alert('User logged in successfully!');
+            // Redirecting the user to the Expense App page
+            window.location.href = '/addExpense';
         } else {
             alert(`Error: ${data.message || 'Unknown error'}`);
         }

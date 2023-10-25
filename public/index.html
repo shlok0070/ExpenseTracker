@@ -54,6 +54,7 @@
         
         if (response.status === 201) {
             alert('User created successfully!');
+            window.location.href = '/login';
             console.log(data);
         } else {
             alert(`Error: ${data.message || 'Unknown error'}`);

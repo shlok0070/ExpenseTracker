@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const app = express();
+const Expense = require('./Expense');
 
 // Serve static files from the "public" directory
 app.use(express.static('public'));
@@ -39,6 +40,53 @@ app.get('/login', (req, res) => {
     res.sendFile(__dirname + '/public/login.html');
 });
 
+
+
+
+app.get('/addExpense', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'addExpense.html')); 
+});
+
+app.post('/submit-expense', async (req, res) => {
+    const { amount, description, category } = req.body;
+
+    try {
+        const expense = await Expense.create({
+            amount,
+            description,
+            category,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+        res.status(201).json(expense);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'An error occurred' });
+    }
+});
+
+app.get('/fetch-expenses', async (req, res) => {
+    try {
+        const expenses = await Expense.findAll();
+        res.status(200).json(expenses);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'An error occurred' });
+    }
+});
+
+app.delete('/delete-expense/:id', async (req, res) => {
+    const expenseId = req.params.id;
+    try {
+        await Expense.destroy({ where: { id: expenseId } });
+        res.status(200).send({ message: 'Expense deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'An error occurred' });
+    }
+});
+
+
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
@@ -56,6 +104,8 @@ app.post('/login', async (req, res) => {
         }
         
         res.status(200).json({ message: 'User logged in successfully' });
+
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'An error occurred' });

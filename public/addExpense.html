@@ -106,21 +106,39 @@ function loadExpenses() {
 }
 
 
-    async function deleteExpense(expenseId) {
-        let response = await fetch(`/delete-expense/${expenseId}`, { method: 'DELETE' });
+        async function deleteExpense(expenseId) {
+            const token = localStorage.getItem('token'); // Fetch the token from local storage
 
-        if (response.status === 200) {
-            // Reload expenses after successful deletion
-            loadExpenses();
-        } else {
-            alert('Error deleting expense. Please try again.');
+            // Check if the token exists before proceeding
+            if (!token) {
+                alert('Please login to delete expenses.');
+                return;
+            }
+
+            let response = await fetch(`/delete-expense/${expenseId}`, { 
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`  // Send the token as a Bearer token in the Authorization header
+                }
+            });
+
+            if (response.status === 200) {
+                // Reload expenses after successful deletion
+                loadExpenses();
+            } else {
+                const responseData = await response.json();
+                const errorMessage = responseData.message || 'Error deleting expense. Please try again.';
+                alert(errorMessage);
+            }
         }
-    }
+
     
     // Submit expense form and load expenses on page load
     document.getElementById("expenseForm").addEventListener('submit', async function(e) {
         e.preventDefault();
 
+
+        const token = localStorage.getItem('token');
         let amount = document.getElementById("amount").value;
         let description = document.getElementById("description").value;
         let category = document.getElementById("category").value;
@@ -128,6 +146,7 @@ function loadExpenses() {
         let response = await fetch('/submit-expense', {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ amount, description, category })

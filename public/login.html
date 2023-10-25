@@ -51,6 +51,9 @@
         
         if (response.status === 200) {
             alert('User logged in successfully!');
+            const token = data.token;
+            localStorage.setItem('token', token);
+            
             // Redirecting the user to the Expense App page
             window.location.href = '/addExpense';
         } else {

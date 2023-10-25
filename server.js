@@ -5,12 +5,27 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const app = express();
 const Expense = require('./Expense');
+const { verifyToken } = require('./tokenUtility');
+const { generateToken } = require('./tokenUtility');
 
 // Serve static files from the "public" directory
 app.use(express.static('public'));
 
 app.use(bodyParser.json());  // for parsing application/json
 app.use('/signup', express.static(path.join(__dirname, 'public')));
+
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).send('Access Denied');
+
+    const decoded = verifyToken(token);
+    if (!decoded) return res.status(403).send('Invalid Token');
+
+    req.userId = decoded.userId;
+    next();
+}
 
 app.post('/signup', async (req, res) => {
     const { name, email, password } = req.body;
@@ -47,14 +62,15 @@ app.get('/addExpense', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'addExpense.html')); 
 });
 
-app.post('/submit-expense', async (req, res) => {
+app.post('/submit-expense', authenticateToken, async (req, res) => {
     const { amount, description, category } = req.body;
-
+    const userId = req.userId;
     try {
         const expense = await Expense.create({
             amount,
             description,
             category,
+            userId,
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -75,16 +91,33 @@ app.get('/fetch-expenses', async (req, res) => {
     }
 });
 
-app.delete('/delete-expense/:id', async (req, res) => {
+app.delete('/delete-expense/:id', authenticateToken, async (req, res) => {
     const expenseId = req.params.id;
+    const userId = req.userId; // Extracted from the token via the authenticateToken middleware
+
     try {
-        await Expense.destroy({ where: { id: expenseId } });
+        // Fetch the expense based on the provided ID
+        const expense = await Expense.findOne({ where: { id: expenseId } });
+
+        // Check if the expense exists
+        if (!expense) {
+            return res.status(404).send({ message: 'Expense not found' });
+        }
+
+        // Check if the logged-in user is the creator of the expense
+        if (expense.userId !== userId) {
+            return res.status(403).send({ message: 'You do not have permission to delete this expense' });
+        }
+
+        // Delete the expense
+        await expense.destroy();
         res.status(200).send({ message: 'Expense deleted successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).send({ message: 'An error occurred' });
     }
 });
+
 
 
 app.post('/login', async (req, res) => {
@@ -102,8 +135,9 @@ app.post('/login', async (req, res) => {
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Wrong password' });
         }
-        
-        res.status(200).json({ message: 'User logged in successfully' });
+        const token = generateToken(user.id); 
+        res.status(200).json({token, message: 'User logged in successfully' });
+
 
 
     } catch (error) {

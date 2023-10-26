@@ -15,6 +15,8 @@
     <div class="d-flex justify-content-between align-items-center">
     <h2>Enter Your Expense</h2>
     <button id="rzp-button1" class ="btn btn-warning">Buy Premium</button>
+    <div id="premiumMessage" class="d-none">You're a PREMIUM user</div>
+    <button id="showLeaderboard" class="btn btn-info d-none">Show Leaderboard</button>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </div>
     <form id="expenseForm">
@@ -42,6 +44,7 @@
     </form>
 
     <!-- Expenses table with "Delete" buttons -->
+    <h2 class="mt-5">Expenses</h2>
     <table id="expensesTable" class="table mt-5">
         <thead>
             <tr>
@@ -55,6 +58,20 @@
             <!-- Rows will be added here dynamically -->
         </tbody>
     </table>
+
+    <h2 class="mt-5">Leaderboard</h2>
+<table id="leaderboardTable" class="table mt-5">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Total Expenses</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Leaderboard rows will be added here dynamically -->
+    </tbody>
+</table>
+
 </div>
 
 <!-- Include Bootstrap JS and Popper.js for dropdown functionality (optional) -->
@@ -74,6 +91,24 @@
     };
     return button;
 }
+
+async function checkIsPremium() {
+    const token = localStorage.getItem('token');
+    let response = await fetch('/check-premium-status', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    let responseData = await response.json();
+
+    if (responseData.isPremium) {
+        document.getElementById('rzp-button1').classList.add('d-none'); // hide the buy premium button
+        document.getElementById('premiumMessage').classList.remove('d-none'); // show the premium message
+        document.getElementById('showLeaderboard').classList.remove('d-none'); // show the leaderboard button for premium users
+    }
+}
+
 
 
 function loadExpenses() {
@@ -198,6 +233,7 @@ function loadExpenses() {
             let captureData = await captureResponse.json();
             if (captureData.success) {
                 alert("Payment Successful! You're a PREMIUM user now!");
+                location.reload();
             } else {
                 alert("Payment failed!");
             }
@@ -209,12 +245,44 @@ function loadExpenses() {
     rzp1.open();
 };
 
+document.getElementById("showLeaderboard").addEventListener("click", async () => {
+    try {
+        const response = await fetch('/leaderboard');
+        const leaderboard = await response.json();
+
+        // Display the leaderboard
+        let tableBody = document.querySelector("#leaderboardTable tbody");
+        tableBody.innerHTML = ""; // Clear previous rows
+
+        leaderboard.forEach(entry => {
+            let row = document.createElement('tr');
+
+            let nameCell = document.createElement('td');
+            nameCell.textContent = entry.name;
+
+            let totalExpensesCell = document.createElement('td');
+            totalExpensesCell.textContent = entry.totalExpenses || "N/A";  // Handle null values
+
+            row.appendChild(nameCell);
+            row.appendChild(totalExpensesCell);
+
+            tableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error("Failed to fetch leaderboard:", error);
+    }
+});
 
 
 
 
-    // Load expenses when the page is loaded
-    window.onload = loadExpenses;
+
+    // Load expenses and check premium when the page is loaded
+    window.onload = function() {
+    loadExpenses();
+    checkIsPremium();
+};
+
 </script>
 
 </body>

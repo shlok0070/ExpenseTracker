@@ -8,6 +8,7 @@ const Expense = require('./Expense');
 const { verifyToken } = require('./tokenUtility');
 const { generateToken } = require('./tokenUtility');
 const rzp = require('./paymentService');
+const Sequelize = require('sequelize');
 
 // Serve static files from the "public" directory
 app.use(express.static('public'));
@@ -91,7 +92,47 @@ app.post('/purchase/updatetransactionstatus', authenticateToken, async (req, res
     }
 });
 
+app.get('/check-premium-status', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.userId;  // Extracted from the token via the authenticateToken middleware
+        const user = await User.findOne({ where: { id: userId } });
 
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.isPremium) {
+            res.status(200).json({ isPremium: true, message: 'User has a premium membership.' });
+        } else {
+            res.status(200).json({ isPremium: false, message: 'User does not have a premium membership.' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'An error occurred while checking premium status' });
+    }
+});
+
+app.get('/leaderboard', async (req, res) => {
+    try {
+        const leaderboard = await User.findAll({
+            attributes: [
+                'name',
+                [Sequelize.fn('SUM', Sequelize.col('Expenses.amount')), 'totalExpenses']
+            ],
+            include: [{
+                model: Expense,
+                attributes: [] // We don't want to include Expense's attributes in the main result.
+            }],
+            group: ['user.id', 'name'],
+            order: [[Sequelize.fn('SUM', Sequelize.col('Expenses.amount')), 'DESC']] // Order by total expenses descending
+        });
+        
+        res.status(200).json(leaderboard);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'An error occurred' });
+    }
+});
 
 
 app.get('/addExpense', (req, res) => {

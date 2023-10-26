@@ -7,6 +7,7 @@ const app = express();
 const Expense = require('./Expense');
 const { verifyToken } = require('./tokenUtility');
 const { generateToken } = require('./tokenUtility');
+const rzp = require('./paymentService');
 
 // Serve static files from the "public" directory
 app.use(express.static('public'));
@@ -53,6 +54,41 @@ app.post('/signup', async (req, res) => {
 
 app.get('/login', (req, res) => {
     res.sendFile(__dirname + '/public/login.html');
+});
+
+app.get('/purchase/premiummembership', authenticateToken, async (req, res) => {
+    try {
+        const options = {
+            amount: 10000,  
+            currency: "INR", 
+            receipt: "receipt_order_74394",  
+            payment_capture: '0'
+        };
+
+        const order = await rzp.orders.create(options);
+        res.json({ key_id: rzp.key_id, order: order });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Error creating order" });
+    }
+});
+
+app.post('/purchase/updatetransactionstatus', authenticateToken, async (req, res) => {
+    try {
+        const { payment_id } = req.body;
+        const userId = req.userId;  // Get user ID from the token
+
+        // Capture the payment using Razorpay's API. Provide the payment_id and the same amount.
+        await rzp.payments.capture(payment_id, 10000);  // 10000 is the same amount as used while creating the order.
+                
+        // Update the user's isPremium status in the database
+        await User.update({ isPremium: true }, { where: { id: userId } });
+
+        res.json({ message: "Payment successful, you are a Premium user now!", success: true });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Error capturing payment", success: false });
+    }
 });
 
 

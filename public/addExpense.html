@@ -12,7 +12,11 @@
 <body>
 
 <div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center">
     <h2>Enter Your Expense</h2>
+    <button id="rzp-button1" class ="btn btn-warning">Buy Premium</button>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</div>
     <form id="expenseForm">
         <div class="form-group">
             <label for="amount">Amount Spent:</label>
@@ -159,6 +163,55 @@ function loadExpenses() {
             alert('Error submitting expense. Please try again.');
         }
     });
+
+    document.getElementById('rzp-button1').onclick = async function(e) {
+    const token = localStorage.getItem('token');
+    
+    let response = await fetch('http://localhost:3000/purchase/premiummembership', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    
+    let responseData = await response.json();
+
+    var options = {
+        "key": responseData.key_id,
+        "order_id": responseData.order.id,
+        // ... rest of your Razorpay options
+        "handler": async function(response) {
+            // Here you'll capture the payment on your server
+            const data = {
+                order_id: options.order_id,
+                payment_id: response.razorpay_payment_id
+            };
+
+            let captureResponse = await fetch('http://localhost:3000/purchase/updatetransactionstatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            let captureData = await captureResponse.json();
+            if (captureData.success) {
+                alert("Payment Successful! You're a PREMIUM user now!");
+            } else {
+                alert("Payment failed!");
+            }
+        }
+    };
+
+    // Initialize the Razorpay checkout:
+    const rzp1 = new Razorpay(options);
+    rzp1.open();
+};
+
+
+
+
 
     // Load expenses when the page is loaded
     window.onload = loadExpenses;

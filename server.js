@@ -9,6 +9,21 @@ const { verifyToken } = require('./tokenUtility');
 const { generateToken } = require('./tokenUtility');
 const rzp = require('./paymentService');
 const Sequelize = require('sequelize');
+const nodemailer = require('nodemailer');
+const sendinBlueTransport = require('nodemailer-sendinblue-transport');
+const crypto = require('crypto');
+
+// Initialize the transporter
+const transporter = nodemailer.createTransport({
+    service: 'SendinBlue',
+    auth: {
+      user: 'shlokthegamer@gmail.com', // replace with your SendinBlue email
+      pass: 'kIxBgtWG5DbOw46U' // replace with your SendinBlue API Key
+    },
+    debug: true, // show debug output
+    logger: true // log information in console
+  });
+  
 
 // Serve static files from the "public" directory
 app.use(express.static('public'));
@@ -222,6 +237,47 @@ app.post('/login', async (req, res) => {
 
     } catch (error) {
         console.error(error);
+        res.status(500).json({ message: 'An error occurred' });
+    }
+});
+
+app.post('/forgotpassword', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ where: { email } });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User with this email does not exist' });
+        }
+
+        // Create a reset token and expiry
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = Date.now() + 3600000; // token valid for 1 hour
+
+        // Save the token and expiry in the user model
+        user.resetToken = resetToken;
+        user.resetTokenExpiry = resetTokenExpiry;
+        await user.save();
+
+        // Email the reset link to the user
+        const mailOptions = {
+            from: 'admin@expensetracker.com', // your email address
+            to: email,
+            subject: 'Password Reset Link',
+            text: `You requested for a password reset. Click on this link to reset your password: http://localhost:3000/resetpassword?token=${resetToken}` 
+            // Adjust the domain to your frontend domain and endpoint.
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+                return res.status(500).json({ message: 'Error sending reset email' });
+            }
+            res.status(200).json({ message: 'Password reset link sent to email' });
+        });
+    } catch (error) {
+        console.error('Error in forgot password:', error);
         res.status(500).json({ message: 'An error occurred' });
     }
 });

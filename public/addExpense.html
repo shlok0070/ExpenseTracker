@@ -13,21 +13,24 @@
 
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center">
-    <h2>Enter Your Expense</h2>
-    <button id="rzp-button1" class ="btn btn-warning">Buy Premium</button>
-    <div id="premiumMessage" class="d-none">You're a PREMIUM user</div>
-    <button id="showLeaderboard" class="btn btn-info d-none">Show Leaderboard</button>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-</div>
+        <h2>Enter Your Expense</h2>
+        <button id="rzp-button1" class="btn btn-warning">Buy Premium</button>
+        <!-- <button id="downloadExpenses" class="btn btn-success d-none">Download Expenses</button> -->
+        <div id="premiumMessage" class="d-none">You're a PREMIUM user</div>
+        <button id="showLeaderboard" class="btn btn-info d-none">Show Leaderboard</button>
+        
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    </div>
     <form id="expenseForm">
         <div class="form-group">
             <label for="amount">Amount Spent:</label>
             <input type="number" class="form-control" id="amount" name="amount" placeholder="Enter amount" required>
         </div>
-        
+
         <div class="form-group">
             <label for="description">Description:</label>
-            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter expense description" required></textarea>
+            <textarea class="form-control" id="description" name="description" rows="3"
+                placeholder="Enter expense description" required></textarea>
         </div>
 
         <div class="form-group">
@@ -60,18 +63,35 @@
     </table>
 
     <h2 class="mt-5">Leaderboard</h2>
-<table id="leaderboardTable" class="table mt-5">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Total Expenses</th>
-        </tr>
-    </thead>
-    <tbody>
-        <!-- Leaderboard rows will be added here dynamically -->
-    </tbody>
-</table>
+    <table id="leaderboardTable" class="table mt-5">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Total Expenses</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Leaderboard rows will be added here dynamically -->
+        </tbody>
+    </table>
 
+    <!-- Download Expenses Button (for premium users) -->
+    <button id="downloadExpenses" class="btn btn-success d-none">Download Expenses</button>
+
+    <!-- Date Filter Buttons -->
+    <div class="mt-5">
+        <h2>Filter Expenses</h2>
+        <button id="filterDaily" class="btn btn-secondary">Daily</button>
+        <button id="filterWeekly" class="btn btn-secondary">Weekly</button>
+        <button id="filterMonthly" class="btn btn-secondary">Monthly</button>
+        <button id="resetFilter" class="btn btn-secondary">Reset</button>
+    </div>
+
+    <!-- Filtered Expenses Table -->
+    <h2 class="mt-5">Filtered Expenses</h2>
+    <table id="filteredExpensesTable" class="table mt-5">
+        <!-- Rows will be added here dynamically -->
+    </table>
 </div>
 
 <!-- Include Bootstrap JS and Popper.js for dropdown functionality (optional) -->
@@ -106,6 +126,7 @@ async function checkIsPremium() {
         document.getElementById('rzp-button1').classList.add('d-none'); // hide the buy premium button
         document.getElementById('premiumMessage').classList.remove('d-none'); // show the premium message
         document.getElementById('showLeaderboard').classList.remove('d-none'); // show the leaderboard button for premium users
+        document.getElementById('downloadExpenses').classList.remove('d-none'); // show download Expense button for premium users
     }
 }
 

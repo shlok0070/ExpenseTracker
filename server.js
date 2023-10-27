@@ -115,16 +115,8 @@ app.get('/check-premium-status', authenticateToken, async (req, res) => {
 app.get('/leaderboard', async (req, res) => {
     try {
         const leaderboard = await User.findAll({
-            attributes: [
-                'name',
-                [Sequelize.fn('SUM', Sequelize.col('Expenses.amount')), 'totalExpenses']
-            ],
-            include: [{
-                model: Expense,
-                attributes: [] // We don't want to include Expense's attributes in the main result.
-            }],
-            group: ['user.id', 'name'],
-            order: [[Sequelize.fn('SUM', Sequelize.col('Expenses.amount')), 'DESC']] // Order by total expenses descending
+            attributes: ['name', 'totalExpenses'],
+            order: [['totalExpenses', 'DESC']] // Order by total expenses descending
         });
         
         res.status(200).json(leaderboard);
@@ -133,6 +125,7 @@ app.get('/leaderboard', async (req, res) => {
         res.status(500).json({ message: 'An error occurred' });
     }
 });
+
 
 
 app.get('/addExpense', (req, res) => {
@@ -151,12 +144,19 @@ app.post('/submit-expense', authenticateToken, async (req, res) => {
             createdAt: new Date(),
             updatedAt: new Date()
         });
+
+        // Increment the user's total expenses
+        const user = await User.findByPk(userId);
+        user.totalExpenses += parseFloat(amount); // make sure amount is a float
+        await user.save();
+
         res.status(201).json(expense);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'An error occurred' });
     }
 });
+
 
 app.get('/fetch-expenses', async (req, res) => {
     try {
@@ -170,21 +170,23 @@ app.get('/fetch-expenses', async (req, res) => {
 
 app.delete('/delete-expense/:id', authenticateToken, async (req, res) => {
     const expenseId = req.params.id;
-    const userId = req.userId; // Extracted from the token via the authenticateToken middleware
+    const userId = req.userId; 
 
     try {
-        // Fetch the expense based on the provided ID
         const expense = await Expense.findOne({ where: { id: expenseId } });
-
-        // Check if the expense exists
+        
         if (!expense) {
             return res.status(404).send({ message: 'Expense not found' });
         }
 
-        // Check if the logged-in user is the creator of the expense
         if (expense.userId !== userId) {
             return res.status(403).send({ message: 'You do not have permission to delete this expense' });
         }
+
+        // Decrement the user's total expenses before deleting the expense
+        const user = await User.findByPk(userId);
+        user.totalExpenses -= parseFloat(expense.amount); // ensure expense.amount is a float
+        await user.save();
 
         // Delete the expense
         await expense.destroy();
@@ -194,6 +196,7 @@ app.delete('/delete-expense/:id', authenticateToken, async (req, res) => {
         res.status(500).send({ message: 'An error occurred' });
     }
 });
+
 
 
 

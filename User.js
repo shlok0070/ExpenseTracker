@@ -33,7 +33,13 @@ const User = sequelize.define('user', {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
+    },
+    totalExpenses: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        defaultValue: 0.0
     }
+    
 
 }, {
     tableName: 'users'

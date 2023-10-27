@@ -252,12 +252,8 @@ app.post('/forgotpassword', async (req, res) => {
             return res.status(404).json({ message: 'User with this email does not exist' });
         }
 
-        
-
-        // Store the token in ForgotPasswordRequest model
         const passwordRequest = await ForgotPasswordRequest.create({
             userId: user.id,
-
             isActive: true,
             createdAt: new Date(),
             updatedAt: new Date()

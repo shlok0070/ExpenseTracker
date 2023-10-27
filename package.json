@@ -9,6 +9,7 @@
     "nodemailer": "^6.9.7",
     "nodemailer-sendinblue-transport": "^2.0.1",
     "razorpay": "^2.9.2",
-    "sequelize": "^6.33.0"
+    "sequelize": "^6.33.0",
+    "uuid": "^9.0.1"
   }
 }

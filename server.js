@@ -12,6 +12,9 @@ const Sequelize = require('sequelize');
 const nodemailer = require('nodemailer');
 const sendinBlueTransport = require('nodemailer-sendinblue-transport');
 const crypto = require('crypto');
+const uuid = require('uuid');
+const ForgotPasswordRequest = require('./ForgotPasswordRequest');
+
 
 // Initialize the transporter
 const transporter = nodemailer.createTransport({
@@ -20,8 +23,6 @@ const transporter = nodemailer.createTransport({
       user: 'shlokthegamer@gmail.com', // replace with your SendinBlue email
       pass: 'kIxBgtWG5DbOw46U' // replace with your SendinBlue API Key
     },
-    debug: true, // show debug output
-    logger: true // log information in console
   });
   
 
@@ -251,22 +252,23 @@ app.post('/forgotpassword', async (req, res) => {
             return res.status(404).json({ message: 'User with this email does not exist' });
         }
 
-        // Create a reset token and expiry
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenExpiry = Date.now() + 3600000; // token valid for 1 hour
+        
 
-        // Save the token and expiry in the user model
-        user.resetToken = resetToken;
-        user.resetTokenExpiry = resetTokenExpiry;
-        await user.save();
+        // Store the token in ForgotPasswordRequest model
+        const passwordRequest = await ForgotPasswordRequest.create({
+            userId: user.id,
+
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
         // Email the reset link to the user
         const mailOptions = {
-            from: 'admin@expensetracker.com', // your email address
+            from: 'admin@expensetracker.com', 
             to: email,
             subject: 'Password Reset Link',
-            text: `You requested for a password reset. Click on this link to reset your password: http://localhost:3000/resetpassword?token=${resetToken}` 
-            // Adjust the domain to your frontend domain and endpoint.
+            text: `You requested for a password reset. Click on this link to reset your password: http://localhost:3000/resetpassword?id=${passwordRequest.id}`
         };
 
         transporter.sendMail(mailOptions, (error, info) => {
@@ -279,6 +281,57 @@ app.post('/forgotpassword', async (req, res) => {
     } catch (error) {
         console.error('Error in forgot password:', error);
         res.status(500).json({ message: 'An error occurred' });
+    }
+});
+
+app.get('/resetpassword', async (req, res) => {
+    const requestId = req.query.id; // Assuming the UUID is passed as a query parameter
+
+    if (!requestId) {
+        return res.status(400).send('Invalid reset link');
+    }
+
+    try {
+        const request = await ForgotPasswordRequest.findOne({ where: { id: requestId } });
+
+        if (!request || !request.isActive) {
+            return res.status(400).send('Invalid or expired reset link');
+        }
+
+        // Render the reset password form with requestId as a hidden input
+        res.sendFile(__dirname + '/public/resetPassword.html');
+    } catch (error) {
+        console.error('Error in resetpassword route:', error);
+        res.status(500).send('An error occurred');
+    }
+});
+
+app.post('/updatepassword', async (req, res) => {
+    const { requestId, newPassword } = req.body;
+
+    if (!requestId || !newPassword) {
+        return res.status(400).send('Missing required parameters');
+    }
+
+    try {
+        const request = await ForgotPasswordRequest.findOne({ where: { id: requestId } });
+
+        if (!request || !request.isActive) {
+            return res.status(400).send('Invalid or expired reset link');
+        }
+
+        // Hash the new password and update the user's password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await User.update({ password: hashedPassword }, { where: { id: request.userId } });
+
+        // Deactivate the reset password request
+        request.isActive = false;
+        await request.save();
+
+        res.send('Password updated successfully');
+    } catch (error) {
+        console.error('Error in updatepassword route:', error);
+        res.status(500).send('An error occurred');
     }
 });
 

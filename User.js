@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = require('./database');
+const ForgotPasswordRequest = require('./ForgotPasswordRequest');  // Assuming the models are in the same directory
 
 const User = sequelize.define('user', {
     id: {
@@ -38,11 +39,13 @@ const User = sequelize.define('user', {
         type: DataTypes.FLOAT,
         allowNull: true,
         defaultValue: 0.0
-    }
+    },
     
-
 }, {
     tableName: 'users'
 });
 
 module.exports = User;
+
+User.hasMany(ForgotPasswordRequest, { foreignKey: 'userId' });
+ForgotPasswordRequest.belongsTo(User, { foreignKey: 'userId' });

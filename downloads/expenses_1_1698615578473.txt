@@ -1,0 +1,47 @@
+Expense Report
+
+Expense 1
+Amount: 500
+Description: Bad Dal
+Category: Food
+----------------
+Expense 2
+Amount: 500
+Description: Bad Chawal
+Category: Food
+----------------
+Expense 3
+Amount: 500
+Description: Bad Sabzi
+Category: Food
+----------------
+Expense 4
+Amount: 500
+Description: Bad Roti
+Category: Food
+----------------
+Expense 5
+Amount: 1000
+Description: Test Food
+Category: Food
+----------------
+Expense 6
+Amount: 1000
+Description: Test Food 2
+Category: Food
+----------------
+Expense 7
+Amount: 1000
+Description: Test Food 3
+Category: Food
+----------------
+Expense 8
+Amount: 1000
+Description: Test Food 4
+Category: Food
+----------------
+Expense 9
+Amount: 1000
+Description: Test Food 5
+Category: Food
+----------------

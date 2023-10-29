@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const User = require('./User');
 const bodyParser = require('body-parser');
@@ -17,7 +18,7 @@ const ForgotPasswordRequest = require('./ForgotPasswordRequest');
 const { Op, DataTypes } = require('sequelize');
 const AWS = require('aws-sdk');
 const fs = require('fs');
-require('dotenv').config();
+
 
 // Initialize the transporter
 const transporter = nodemailer.createTransport({
@@ -29,8 +30,8 @@ const transporter = nodemailer.createTransport({
   });
   
   AWS.config.update({
-    accessKeyId: 'AKIA3TW2KAOEWHEUHBVU',
-    secretAccessKey: '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',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     region: 'ap-south-1'
 });
 

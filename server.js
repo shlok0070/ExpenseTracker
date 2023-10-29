@@ -17,6 +17,7 @@ const ForgotPasswordRequest = require('./ForgotPasswordRequest');
 const { Op, DataTypes } = require('sequelize');
 const AWS = require('aws-sdk');
 const fs = require('fs');
+require('dotenv').config();
 
 // Initialize the transporter
 const transporter = nodemailer.createTransport({

@@ -60,8 +60,15 @@
         <tbody>
             <!-- Rows will be added here dynamically -->
         </tbody>
+        
     </table>
-
+    <!-- Pagination controls -->
+    <div class="pagination d-flex justify-content-center mt-3">
+        <button id="prevPage" onclick="prevPage()" class="btn btn-secondary mr-2">Previous</button>
+        <span id="pageIndicator" class="mx-3 align-self-center">Page 1</span>
+        <button id="nextPage" onclick="nextPage()" class="btn btn-secondary ml-2">Next</button>
+    </div>
+    
     <h2 class="mt-5 premium-only" id="leaderboardHeader" class="d-none">Leaderboard</h2>
     <table id="leaderboardTable" class="table mt-5 premium-only">
 
@@ -119,6 +126,31 @@
     return button;
 }
 
+function handlePagination(totalPages) {
+    document.getElementById('pageIndicator').innerText = `Page ${currentPage} of ${totalPages}`;
+
+    // Enable/Disable previous button
+    document.getElementById('prevPage').disabled = currentPage <= 1;
+
+    // Enable/Disable next button
+    document.getElementById('nextPage').disabled = currentPage >= totalPages;
+}
+
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        loadExpenses(currentPage);
+    }
+}
+
+function nextPage() {
+    let totalPages = parseInt(document.getElementById('pageIndicator').innerText.split(" of ")[1]);
+    if (currentPage < totalPages) {
+        currentPage++;
+        loadExpenses(currentPage);
+    }
+}
+
 async function checkIsPremium() {
     const token = localStorage.getItem('token');
     let response = await fetch('/check-premium-status', {
@@ -151,15 +183,16 @@ async function checkIsPremium() {
 
 
 
-
-function loadExpenses() {
-    fetch('/fetch-expenses')
+let currentPage = 1;
+const limit = 10;
+function loadExpenses(page = currentPage) {
+    fetch(`/fetch-expenses?page=${page}&limit=${limit}`)
         .then(response => response.json())
-        .then(expenses => {
+        .then(data => {
             let tableBody = document.querySelector("#expensesTable tbody");
             tableBody.innerHTML = ""; // Clear previous rows
 
-            expenses.forEach(expense => {
+            data.expenses.forEach(expense => {
                 let row = document.createElement('tr');
                 
                 let amountCell = document.createElement('td');
@@ -182,8 +215,12 @@ function loadExpenses() {
 
                 tableBody.appendChild(row);
             });
+
+            // Handle pagination controls
+            handlePagination(data.totalPages);
         });
 }
+
 
 
         async function deleteExpense(expenseId) {

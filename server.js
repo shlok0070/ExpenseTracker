@@ -200,8 +200,24 @@ app.post('/submit-expense', authenticateToken, async (req, res) => {
 
 app.get('/fetch-expenses', async (req, res) => {
     try {
-        const expenses = await Expense.findAll();
-        res.status(200).json(expenses);
+        let page = parseInt(req.query.page) || 1;
+        let limit = parseInt(req.query.limit) || 10;
+        let offset = (page - 1) * limit;
+
+        const expenses = await Expense.findAll({
+            limit: limit,
+            offset: offset
+        });
+
+        // Get the total count of expenses to calculate the total number of pages
+        const totalExpenses = await Expense.count();
+        const totalPages = Math.ceil(totalExpenses / limit);
+
+        res.status(200).json({
+            expenses,
+            totalPages
+        });
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'An error occurred' });

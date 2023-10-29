@@ -61,6 +61,14 @@
             <!-- Rows will be added here dynamically -->
         </tbody>
         
+        <label for="expensesPerPage">Expenses per page:</label>
+        <select id="expensesPerPage" onchange="updateExpensesPerPage()">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="40">40</option>
+        </select>
+
     </table>
     <!-- Pagination controls -->
     <div class="pagination d-flex justify-content-center mt-3">
@@ -136,6 +144,15 @@ function handlePagination(totalPages) {
     document.getElementById('nextPage').disabled = currentPage >= totalPages;
 }
 
+function updateExpensesPerPage() {
+    const selectedValue = parseInt(document.getElementById("expensesPerPage").value);
+    localStorage.setItem('expensesPerPage', selectedValue);
+    limit = selectedValue;
+    currentPage = 1;  // Reset the current page to 1
+    loadExpenses(1); // Reload expenses from the first page with the new limit
+}
+
+
 function prevPage() {
     if (currentPage > 1) {
         currentPage--;
@@ -182,9 +199,10 @@ async function checkIsPremium() {
 
 
 
-
+// Set a default value
+const defaultLimit = 10;
+let limit = localStorage.getItem('expensesPerPage') ? parseInt(localStorage.getItem('expensesPerPage')) : defaultLimit;
 let currentPage = 1;
-const limit = 10;
 function loadExpenses(page = currentPage) {
     fetch(`/fetch-expenses?page=${page}&limit=${limit}`)
         .then(response => response.json())
@@ -218,6 +236,7 @@ function loadExpenses(page = currentPage) {
 
             // Handle pagination controls
             handlePagination(data.totalPages);
+            document.getElementById("expensesPerPage").value = limit;
         });
 }
 
@@ -489,6 +508,11 @@ function clearFilter() {
 
     // Load expenses and check premium when the page is loaded
     window.onload = function() {
+        const expensesPerPageStored = localStorage.getItem('expensesPerPage');
+    if (expensesPerPageStored) {
+        document.getElementById("expensesPerPage").value = expensesPerPageStored;
+        limit = parseInt(expensesPerPageStored);
+    }
     loadExpenses();
     checkIsPremium();
 };

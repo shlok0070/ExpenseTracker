@@ -23,8 +23,8 @@ require('dotenv').config();
 const transporter = nodemailer.createTransport({
     service: 'SendinBlue',
     auth: {
-      user: 'shlokthegamer@gmail.com', // replace with your SendinBlue email
-      pass: 'kIxBgtWG5DbOw46U' // replace with your SendinBlue API Key
+        user: process.env.SendinBlue_User, // replace with your SendinBlue email
+        pass: process.env.SendinBlue_APIKey // replace with your SendinBlue API Key
     },
   });
   

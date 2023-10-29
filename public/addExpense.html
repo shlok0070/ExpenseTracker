@@ -62,8 +62,9 @@
         </tbody>
     </table>
 
-    <h2 class="mt-5">Leaderboard</h2>
-    <table id="leaderboardTable" class="table mt-5">
+    <h2 class="mt-5 premium-only" id="leaderboardHeader" class="d-none">Leaderboard</h2>
+    <table id="leaderboardTable" class="table mt-5 premium-only">
+
         <thead>
             <tr>
                 <th>Name</th>
@@ -76,22 +77,28 @@
     </table>
 
     <!-- Download Expenses Button (for premium users) -->
-    <button id="downloadExpenses" class="btn btn-success d-none">Download Expenses</button>
+    <button id="downloadExpenses" class="btn btn-success d-none">Download Your Expenses</button>
 
+    
     <!-- Date Filter Buttons -->
-    <div class="mt-5">
-        <h2>Filter Expenses</h2>
-        <button id="filterDaily" class="btn btn-secondary">Daily</button>
-        <button id="filterWeekly" class="btn btn-secondary">Weekly</button>
-        <button id="filterMonthly" class="btn btn-secondary">Monthly</button>
-        <button id="resetFilter" class="btn btn-secondary">Reset</button>
+    <div class="mt-5 premium-only">
+        <h2>Filter Expenses Feature [ PREMIUM USERS ONLY ]</h2>
+        <button id="filterDaily" class="btn btn-secondary" onclick="filterExpenses('Daily')">Daily</button>
+        <button id="filterWeekly" class="btn btn-secondary" onclick="filterExpenses('Weekly')">Weekly</button>
+        <button id="filterMonthly" class="btn btn-secondary" onclick="filterExpenses('Monthly')">Monthly</button>
+        <button id="resetFilter" class="btn btn-secondary" onclick="clearFilter()">Reset</button>
     </div>
 
+
     <!-- Filtered Expenses Table -->
-    <h2 class="mt-5">Filtered Expenses</h2>
-    <table id="filteredExpensesTable" class="table mt-5">
-        <!-- Rows will be added here dynamically -->
+    <h2 class="mt-5 premium-only" id="filteredExpensesHeader" class="d-none">Filtered Expenses</h2>
+    <table id="filteredExpensesTable" class="table mt-5 premium-only">
+        <tbody>
+            <!-- Rows will be added here dynamically -->
+        </tbody>
     </table>
+    
+
 </div>
 
 <!-- Include Bootstrap JS and Popper.js for dropdown functionality (optional) -->
@@ -123,12 +130,25 @@ async function checkIsPremium() {
     let responseData = await response.json();
 
     if (responseData.isPremium) {
-        document.getElementById('rzp-button1').classList.add('d-none'); // hide the buy premium button
-        document.getElementById('premiumMessage').classList.remove('d-none'); // show the premium message
-        document.getElementById('showLeaderboard').classList.remove('d-none'); // show the leaderboard button for premium users
-        document.getElementById('downloadExpenses').classList.remove('d-none'); // show download Expense button for premium users
+        // User is premium, show the elements with the .premium-only class
+        document.querySelectorAll('.premium-only').forEach(element => {
+            element.classList.remove('d-none');
+        });
+
+        document.getElementById('showLeaderboard').classList.remove('d-none'); // Show Leaderboard buton for premium users
+        document.getElementById('rzp-button1').classList.add('d-none'); // Hide the buy premium button
+        document.getElementById('premiumMessage').classList.remove('d-none'); // Show the premium message
+        document.getElementById('downloadExpenses').classList.remove('d-none'); // Show download Expense button for premium users
+
+    } else {
+        // User is not premium, hide the elements with the .premium-only class
+        document.querySelectorAll('.premium-only').forEach(element => {
+            element.classList.add('d-none');
+        });
     }
 }
+
+
 
 
 
@@ -293,6 +313,138 @@ document.getElementById("showLeaderboard").addEventListener("click", async () =>
         console.error("Failed to fetch leaderboard:", error);
     }
 });
+
+
+//LOGIC FOR BUTTONS ______________________________________________________________________________________________________________
+
+async function filterExpenses(filterType) {
+    const token = localStorage.getItem('token');
+    const currentDate = new Date();
+    let startDate, endDate;
+
+    if (filterType === 'Daily') {
+        // Filter for today's expenses
+        startDate = new Date(currentDate);
+        startDate.setDate(currentDate.getDate() - 1);
+        endDate = new Date(currentDate);
+    } else if (filterType === 'Weekly') {
+        // Filter for the current week's expenses
+        startDate = new Date(currentDate);
+        startDate.setDate(currentDate.getDate() - 7);
+        endDate = new Date(currentDate);
+    } else if (filterType === 'Monthly') {
+        // Filter for the current month's expenses
+        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    }
+
+    // Format the start and end dates to ISO strings
+    const startDateISO = startDate.toISOString();
+    const endDateISO = endDate.toISOString();
+
+    // Make an API request to fetch filtered expenses
+    try {
+        const response = await fetch(`/fetch-filtered-expenses?startDate=${startDateISO}&endDate=${endDateISO}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 200) {
+            const filteredExpenses = await response.json();
+            // Display the filtered expenses on the page
+            displayFilteredExpenses(filteredExpenses);
+        } else {
+            const errorMessage = await response.text();
+            console.error(`Error fetching expenses: ${errorMessage}`);
+            alert('Error fetching expenses. Please try again.');
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+function displayFilteredExpenses(filteredExpenses) {
+    const tableBody = document.querySelector("#filteredExpensesTable tbody");
+    tableBody.innerHTML = ""; // Clear previous rows
+
+    filteredExpenses.forEach(expense => {
+        const row = document.createElement('tr');
+
+        // Create and populate cells for each column
+        const amountCell = document.createElement('td');
+        amountCell.textContent = expense.amount;
+
+        const descriptionCell = document.createElement('td');
+        descriptionCell.textContent = expense.description;
+
+        const categoryCell = document.createElement('td');
+        categoryCell.textContent = expense.category;
+
+        // Append cells to the row
+        row.appendChild(amountCell);
+        row.appendChild(descriptionCell);
+        row.appendChild(categoryCell);
+
+        // Append the row to the table body
+        tableBody.appendChild(row);
+    });
+}
+
+
+// Function to handle downloading expenses
+document.getElementById("downloadExpenses").addEventListener("click", async () => {
+    try {
+        // Get the token from localStorage
+        const token = localStorage.getItem('token');
+
+        // Check if the token exists before proceeding
+        if (!token) {
+            alert('Please login to download expenses.');
+            return;
+        }
+
+        // Set up the headers with the Authorization header containing the token
+        const headers = {
+            Authorization: `Bearer ${token}`,
+        };
+
+        const response = await fetch('/download-expenses', {
+            method: 'GET',
+            headers: headers,
+        });
+
+        const downloadData = await response.json();
+
+        if (response.status === 200) {
+            // If the download was successful, open a new window/tab with the download URL
+            const downloadUrl = downloadData.downloadUrl;
+            if (downloadUrl) {
+                window.open(downloadUrl, '_blank');
+            } else {
+                alert('Download URL is missing. Please try again later.');
+            }
+        } else {
+            // Handle errors or display a message if the download fails
+            const errorMessage = downloadData.message || 'Error downloading expenses. Please try again.';
+            alert(errorMessage);
+        }
+    } catch (error) {
+        console.error("Failed to download expenses:", error);
+    }
+});
+
+
+
+function clearFilter() {
+    // Clear the filtered expenses table
+    const tableBody = document.querySelector("#filteredExpensesTable tbody");
+    tableBody.innerHTML = "";
+    
+    // Reload expenses to reset the filter
+    loadExpenses();
+}
 
 
 

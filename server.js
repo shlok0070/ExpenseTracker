@@ -14,7 +14,9 @@ const sendinBlueTransport = require('nodemailer-sendinblue-transport');
 const crypto = require('crypto');
 const uuid = require('uuid');
 const ForgotPasswordRequest = require('./ForgotPasswordRequest');
-
+const { Op, DataTypes } = require('sequelize');
+const AWS = require('aws-sdk');
+const fs = require('fs');
 
 // Initialize the transporter
 const transporter = nodemailer.createTransport({
@@ -25,6 +27,28 @@ const transporter = nodemailer.createTransport({
     },
   });
   
+  AWS.config.update({
+    accessKeyId: 'AKIA3TW2KAOEWHEUHBVU',
+    secretAccessKey: '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',
+    region: 'ap-south-1'
+});
+
+// Create an S3 instance
+const s3 = new AWS.S3(); // Use 's3' as the variable name, not 'S3'
+
+
+AWS.config.update({
+    logging: true
+});
+
+const downloadDirectory = path.join(__dirname, 'downloads'); // Replace __dirname with the appropriate directory path
+
+if (!fs.existsSync(downloadDirectory)) {
+    fs.mkdirSync(downloadDirectory);
+}
+
+// Now you can proceed to write the file to the "downloads" directory
+
 
 // Serve static files from the "public" directory
 app.use(express.static('public'));
@@ -120,7 +144,7 @@ app.get('/check-premium-status', authenticateToken, async (req, res) => {
         if (user.isPremium) {
             res.status(200).json({ isPremium: true, message: 'User has a premium membership.' });
         } else {
-            res.status(200).json({ isPremium: false, message: 'User does not have a premium membership.' });
+            res.status(401).json({ isPremium: false, message: 'User does not have a premium membership.' });
         }
     } catch (error) {
         console.error(error);
@@ -241,6 +265,79 @@ app.post('/login', async (req, res) => {
         res.status(500).json({ message: 'An error occurred' });
     }
 });
+
+app.get('/fetch-filtered-expenses', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        const expenses = await Expense.findAll({
+            where: {
+                createdAt: {
+                    [Op.between]: [startDate, endDate],
+                },
+            },
+        });
+        res.status(200).json(expenses);
+    } catch (error) {
+        console.error('Error fetching filtered expenses:', error);
+        res.status(500).json({ message: 'An error occurred while fetching expenses.' });
+    }
+});
+
+app.get('/download-expenses', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.userId; // Get user ID from the token
+        const expenses = await Expense.findAll({ where: { userId } });
+
+        // Generate a text file with the user's expenses
+        let text = 'Expense Report\n\n';
+
+
+        expenses.forEach((expense, index) => {
+
+            text += `Expense ${index + 1}\n`;
+            text += `Amount: ${expense.amount}\n`;
+            text += `Description: ${expense.description}\n`;
+            text += `Category: ${expense.category}\n`;
+            text += '----------------\n';
+        });
+
+
+        // Generate a unique file name (you can use the user's ID or a timestamp)
+        const fileName = `expenses_${userId}_${Date.now()}.txt`;
+
+        // Create and write the text to a local file
+        const filePath = path.join(__dirname, 'downloads', fileName);
+        fs.writeFileSync(filePath, text);
+
+
+        // Configure AWS S3 parameters for uploading the file (without ACL)
+        const params = {
+            Bucket: 'expense-tracker-downloads',
+            Key: fileName,
+            Body: fs.createReadStream(filePath),
+        };
+
+
+        // Upload the file to AWS S3
+        const uploadResponse = await s3.upload(params).promise();
+
+
+        // Generate a public download URL
+        const downloadUrl = uploadResponse.Location;
+
+        // Delete the local file
+        fs.unlinkSync(filePath);
+
+        // Send the download URL as a response to the client
+        res.json({ downloadUrl, message: 'Expenses downloaded successfully' });
+    } catch (error) {
+        console.error('Error downloading expenses:', error);
+        res.status(500).json({ message: 'An error occurred while downloading expenses.' });
+    }
+});
+
+
+
 
 app.post('/forgotpassword', async (req, res) => {
     const { email } = req.body;

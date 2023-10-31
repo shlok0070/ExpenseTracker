@@ -24,8 +24,8 @@ const fs = require('fs');
 const transporter = nodemailer.createTransport({
     service: 'SendinBlue',
     auth: {
-        user: process.env.SendinBlue_User, // replace with your SendinBlue email
-        pass: process.env.SendinBlue_APIKey // replace with your SendinBlue API Key
+        user: process.env.SENDINBLUE_USER, // replace with your SendinBlue email
+        pass: process.env.SENDINBLUE_APIKEY // replace with your SendinBlue API Key
     },
   });
   

@@ -299,7 +299,7 @@ function loadExpenses(page = currentPage) {
     document.getElementById('rzp-button1').onclick = async function(e) {
     const token = localStorage.getItem('token');
     
-    let response = await fetch('http://localhost:3000/purchase/premiummembership', {
+    let response = await fetch('http://16.171.234.89:3000/purchase/premiummembership', {
         headers: {
             'Authorization': `Bearer ${token}`
         }
@@ -318,7 +318,7 @@ function loadExpenses(page = currentPage) {
                 payment_id: response.razorpay_payment_id
             };
 
-            let captureResponse = await fetch('http://localhost:3000/purchase/updatetransactionstatus', {
+            let captureResponse = await fetch('http://16.171.234.89:3000/purchase/updatetransactionstatus', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

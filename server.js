@@ -200,19 +200,27 @@ app.post('/submit-expense', authenticateToken, async (req, res) => {
 });
 
 
-app.get('/fetch-expenses', async (req, res) => {
+app.get('/fetch-expenses', authenticateToken, async (req, res) => {
     try {
+        const userId = req.userId; // User ID from the token
         let page = parseInt(req.query.page) || 1;
         let limit = parseInt(req.query.limit) || 10;
         let offset = (page - 1) * limit;
 
         const expenses = await Expense.findAll({
+            where: {
+                userId: userId // Filter by authenticated user's ID
+            },
             limit: limit,
             offset: offset
         });
 
-        // Get the total count of expenses to calculate the total number of pages
-        const totalExpenses = await Expense.count();
+        // Count only the authenticated user's expenses
+        const totalExpenses = await Expense.count({
+            where: {
+                userId: userId
+            }
+        });
         const totalPages = Math.ceil(totalExpenses / limit);
 
         res.status(200).json({
@@ -225,6 +233,7 @@ app.get('/fetch-expenses', async (req, res) => {
         res.status(500).json({ message: 'An error occurred' });
     }
 });
+
 
 app.delete('/delete-expense/:id', authenticateToken, async (req, res) => {
     const expenseId = req.params.id;

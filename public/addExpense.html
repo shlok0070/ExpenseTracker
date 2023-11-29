@@ -204,7 +204,16 @@ const defaultLimit = 10;
 let limit = localStorage.getItem('expensesPerPage') ? parseInt(localStorage.getItem('expensesPerPage')) : defaultLimit;
 let currentPage = 1;
 function loadExpenses(page = currentPage) {
-    fetch(`/fetch-expenses?page=${page}&limit=${limit}`)
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in to view expenses.');
+        return;
+    }
+    fetch(`/fetch-expenses?page=${page}&limit=${limit}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
         .then(response => response.json())
         .then(data => {
             let tableBody = document.querySelector("#expensesTable tbody");

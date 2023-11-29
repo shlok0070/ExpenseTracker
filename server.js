@@ -216,7 +216,10 @@ app.get('/fetch-expenses', async (req, res) => {
         });
 
         // Get the total count of expenses to calculate the total number of pages
-        const totalExpenses = await Expense.count();
+        const totalExpenses = await Expense.count({
+            where: { userId: userId }
+        });
+        
         const totalPages = Math.ceil(totalExpenses / limit);
 
         res.status(200).json({

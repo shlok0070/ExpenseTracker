@@ -202,24 +202,17 @@ app.post('/submit-expense', authenticateToken, async (req, res) => {
 
 app.get('/fetch-expenses', async (req, res) => {
     try {
-        const userId = req.userId;
         let page = parseInt(req.query.page) || 1;
         let limit = parseInt(req.query.limit) || 10;
         let offset = (page - 1) * limit;
 
         const expenses = await Expense.findAll({
-            where: {
-                userId: userId // Filter by userId
-            },
             limit: limit,
             offset: offset
         });
 
         // Get the total count of expenses to calculate the total number of pages
-        const totalExpenses = await Expense.count({
-            where: { userId: userId }
-        });
-        
+        const totalExpenses = await Expense.count();
         const totalPages = Math.ceil(totalExpenses / limit);
 
         res.status(200).json({

@@ -202,11 +202,15 @@ app.post('/submit-expense', authenticateToken, async (req, res) => {
 
 app.get('/fetch-expenses', async (req, res) => {
     try {
+        const userId = req.userId;
         let page = parseInt(req.query.page) || 1;
         let limit = parseInt(req.query.limit) || 10;
         let offset = (page - 1) * limit;
 
         const expenses = await Expense.findAll({
+            where: {
+                userId: userId // Filter by userId
+            },
             limit: limit,
             offset: offset
         });
